@@ -3,16 +3,21 @@ package com.sally.poc.jar;
 import com.android.tools.r8.androidapi.ComputedApiLevel;
 import com.android.tools.r8.cf.code.CfArithmeticBinop;
 import com.android.tools.r8.cf.code.CfConstNumber;
+import com.android.tools.r8.cf.code.CfConstString;
 import com.android.tools.r8.cf.code.CfFrame;
 import com.android.tools.r8.cf.code.CfIf;
 import com.android.tools.r8.cf.code.CfInstruction;
+import com.android.tools.r8.cf.code.CfInvoke;
 import com.android.tools.r8.cf.code.CfLabel;
 import com.android.tools.r8.cf.code.CfLoad;
+import com.android.tools.r8.cf.code.CfNew;
 import com.android.tools.r8.cf.code.CfReturn;
 import com.android.tools.r8.cf.code.CfReturnVoid;
+import com.android.tools.r8.cf.code.CfStackInstruction;
 import com.android.tools.r8.cf.code.CfStaticFieldRead;
 import com.android.tools.r8.cf.code.CfStaticFieldWrite;
 import com.android.tools.r8.cf.code.CfStore;
+import com.android.tools.r8.cf.code.CfThrow;
 import com.android.tools.r8.cf.code.frame.FrameType;
 import com.android.tools.r8.dex.Constants;
 import com.android.tools.r8.graph.AppView;
@@ -149,6 +154,7 @@ public class FlowObfuscator {
                 cfCode.setInstructions(instructions);
                 cfCode.setMaxLocals(index + 1);
                 cfCode.setMaxStack(cfCode.getMaxStack() + 2);
+                cfCode.getStackMapStatus();
             }
         }
 
@@ -235,7 +241,21 @@ public class FlowObfuscator {
                         )
                 );
             } else {
-                throw new RuntimeException("not supported " + targetMethod.returnType());
+                instructions.addAll(
+                        ImmutableList.of(
+                                new CfNew(dexItemFactory.createType("Ljava/lang/RuntimeException;")),
+                                new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+                                new CfConstString(dexItemFactory.createString("error!")),
+                                new CfInvoke(
+                                        183,
+                                        dexItemFactory.createMethod(
+                                                dexItemFactory.createType("Ljava/lang/RuntimeException;"),
+                                                dexItemFactory.createProto(dexItemFactory.voidType, dexItemFactory.stringType),
+                                                dexItemFactory.createString("<init>")),
+                                        false),
+                                new CfThrow()
+                        )
+                );
             }
 
             return instructions;
