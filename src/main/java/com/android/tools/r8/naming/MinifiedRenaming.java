@@ -36,10 +36,7 @@ class MinifiedRenaming extends NonIdentityNamingLens {
       FieldRenaming fieldRenaming) {
     super(appView.dexItemFactory());
     this.appView = appView;
-    this.packageRenaming = classRenaming.packageRenaming;
-    renaming.putAll(classRenaming.classRenaming);
-    renaming.putAll(methodRenaming.renaming);
-    renaming.putAll(fieldRenaming.renaming);
+    this.packageRenaming = Map.of();
   }
 
   @Override

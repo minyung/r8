@@ -74,8 +74,6 @@ import com.android.tools.r8.optimize.redundantbridgeremoval.RedundantBridgeRemov
 import com.android.tools.r8.origin.CommandLineOrigin;
 import com.android.tools.r8.profile.art.ArtProfileCompletenessChecker;
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
-import com.android.tools.r8.repackaging.Repackaging;
-import com.android.tools.r8.repackaging.RepackagingLens;
 import com.android.tools.r8.shaking.AbstractMethodRemover;
 import com.android.tools.r8.shaking.AnnotationRemover;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
@@ -711,21 +709,6 @@ public class R8 {
       timing.begin("read -applymapping file");
       appView.loadApplyMappingSeedMapper();
       timing.end();
-
-      // Perform repackaging.
-      if (options.isRepackagingEnabled()) {
-        DirectMappedDexApplication.Builder appBuilder =
-            appView.appInfo().app().asDirect().builder();
-        RepackagingLens lens =
-            new Repackaging(appView.withLiveness()).run(appBuilder, executorService, timing);
-        if (lens != null) {
-          appView.rewriteWithLensAndApplication(lens, appBuilder.build());
-        }
-      }
-      if (appView.appInfo().hasLiveness()) {
-        assert Repackaging.verifyIdentityRepackaging(appView.withLiveness());
-      }
-
 
       // Clear the reference type lattice element cache. This is required since class merging may
       // need to build IR.
