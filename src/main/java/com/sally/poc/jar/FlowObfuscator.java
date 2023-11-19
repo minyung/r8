@@ -13,6 +13,7 @@ import com.android.tools.r8.cf.code.CfReturnVoid;
 import com.android.tools.r8.cf.code.CfStaticFieldRead;
 import com.android.tools.r8.cf.code.CfStaticFieldWrite;
 import com.android.tools.r8.cf.code.CfStore;
+import com.android.tools.r8.cf.code.frame.FrameType;
 import com.android.tools.r8.dex.Constants;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.CfCode;
@@ -37,6 +38,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+
+import it.unimi.dsi.fastutil.ints.Int2ObjectAVLTreeMap;
 
 public class FlowObfuscator {
     private final AppView<AppInfoWithLiveness> appView;
@@ -141,36 +144,12 @@ public class FlowObfuscator {
 
                 List<CfInstruction> instructions = new ArrayList<>(cfCode.getInstructions());
                 instructions.addAll(0, getAddCalcFlowAndIf(index, label));
-
-                if (method.returnType().isVoidType()) {
-                    instructions.addAll(instructions.size(), getReturnVoidLabel(label));
-                } else if (method.returnType().isIntType()) {
-                    instructions.addAll(instructions.size(), getReturnIntLabel(label));
-                } else {
-                    throw new RuntimeException("not supported " + method.returnType());
-                }
+                instructions.addAll(instructions.size(), getReturnLabel(label, method));
 
                 cfCode.setInstructions(instructions);
                 cfCode.setMaxLocals(index + 1);
                 cfCode.setMaxStack(cfCode.getMaxStack() + 2);
             }
-        }
-
-        private List<CfInstruction> getReturnVoidLabel(CfLabel label) {
-            return ImmutableList.of(
-                    label,
-                    new CfFrame(),
-                    new CfReturnVoid()
-            );
-        }
-
-        private List<CfInstruction> getReturnIntLabel(CfLabel label) {
-            return ImmutableList.of(
-                    label,
-                    new CfFrame(),
-                    new CfConstNumber(0, ValueType.INT),
-                    new CfReturn(ValueType.INT)
-            );
         }
 
         private List<CfInstruction> getAddCalcFlowAndIf(int index, CfLabel label) {
@@ -218,6 +197,48 @@ public class FlowObfuscator {
 
         private DexField getEvenNumberDexField() {
             return getDexField(dexItemFactory.intType, "evenNumber");
+        }
+
+        private List<CfInstruction> getReturnLabel(CfLabel label, DexEncodedMethod targetMethod) {
+            List<CfInstruction> instructions = new ArrayList<>();
+
+            instructions.addAll(
+                    0,
+                    ImmutableList.of(
+                            label,
+                            new CfFrame(
+                                    new Int2ObjectAVLTreeMap<>(
+                                            new int[]{0, 1},
+                                            new FrameType[]{
+                                                    FrameType.initializedNonNullReference(dexItemFactory.createType(descriptor)),
+                                                    FrameType.initializedNonNullReference(dexItemFactory.intType),
+                                            }
+                                    )
+//                                    // stack ...
+//                                    new ArrayDeque<>(
+//                                            Arrays.asList(
+//                                                    FrameType.initializedNonNullReference(
+//                                                            dexItemFactory.createType("I"))
+//                                            )
+//                                    )
+                            )
+                    )
+            );
+
+            if (targetMethod.returnType().isVoidType()) {
+                instructions.add(new CfReturnVoid());
+            } else if (targetMethod.returnType().isIntType()) {
+                instructions.addAll(
+                        ImmutableList.of(
+                                new CfConstNumber(0, ValueType.INT),
+                                new CfReturn(ValueType.INT)
+                        )
+                );
+            } else {
+                throw new RuntimeException("not supported " + targetMethod.returnType());
+            }
+
+            return instructions;
         }
     }
 }
