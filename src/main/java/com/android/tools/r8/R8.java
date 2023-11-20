@@ -677,8 +677,8 @@ public class R8 {
         }
       }
 
-      new com.sally.poc.jar.FlowObfuscator(appView.withLiveness()).execute(executorService, timing, List.of("SimpleClass"));
-      new com.sally.poc.dex.FlowObfuscator(appView.withLiveness()).execute(executorService, timing, List.of("com.minyung.android.sample.SimpleClass"));
+      new com.sally.poc.FlowObfuscator(appView.withLiveness()).execute(executorService, timing, List.of("SimpleClass"));
+      new com.sally.poc.FlowObfuscator(appView.withLiveness()).execute(executorService, timing, List.of("com.minyung.android.sample.SimpleClass"));
 
       // Insert a member rebinding oracle in the graph to ensure that all subsequent rewritings of
       // the application has an applied oracle for looking up non-rebound references.
