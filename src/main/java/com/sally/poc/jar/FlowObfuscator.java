@@ -85,7 +85,7 @@ public class FlowObfuscator {
         public Target(DexItemFactory dexItemFactory, DexProgramClass clazz) {
             this.dexItemFactory = dexItemFactory;
             this.clazz = clazz;
-            this.descriptor = "L" + clazz.getTypeName() + ";";
+            this.descriptor = "L" + clazz.getTypeName().replace('.', '/') + ";";
         }
 
         public void execute() {

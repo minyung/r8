@@ -110,7 +110,6 @@ import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.Timing;
 import com.google.common.collect.Iterables;
 import com.google.common.io.ByteStreams;
-import com.sally.poc.jar.FlowObfuscator;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -678,7 +677,8 @@ public class R8 {
         }
       }
 
-      new FlowObfuscator(appView.withLiveness()).execute(executorService, timing, List.of("SimpleClass"));
+      new com.sally.poc.jar.FlowObfuscator(appView.withLiveness()).execute(executorService, timing, List.of("SimpleClass"));
+      new com.sally.poc.dex.FlowObfuscator(appView.withLiveness()).execute(executorService, timing, List.of("com.minyung.android.sample.SimpleClass"));
 
       // Insert a member rebinding oracle in the graph to ensure that all subsequent rewritings of
       // the application has an applied oracle for looking up non-rebound references.
