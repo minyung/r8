@@ -15,6 +15,8 @@ import com.android.tools.r8.graph.FieldAccessFlags;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.Timing;
+import com.sally.poc.dex.DexFlowObfuscatorTarget;
+import com.sally.poc.jar.JarFlowObfuscatorTarget;
 
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -31,7 +33,6 @@ public class FlowObfuscator {
 
     public void execute(ExecutorService executorService, Timing timing, List<String> target) throws ExecutionException {
         timing.begin("flow obfuscator");
-        System.out.println("sally.sim");
         execute(executorService, target);
         timing.end();
     }
@@ -41,11 +42,9 @@ public class FlowObfuscator {
                 appView.appInfo().classes(),
                 clazz -> {
                     String className = clazz.getTypeName();
-                    System.out.println(className);
                     if (!targetClassNameList.contains(className)) {
                         return;
                     }
-                    System.out.println("start");
                     Target target = new Target(dexItemFactory, clazz);
                     target.execute();
                 },
@@ -120,9 +119,9 @@ public class FlowObfuscator {
                 }
 
                 if (code.isCfCode()) {
-                    new com.sally.poc.jar.FlowObfuscator.JarTarget(dexItemFactory, clazz).addFlow();
+                    new JarFlowObfuscatorTarget(dexItemFactory, clazz, method).addFlow();
                 } else if (code.isDexCode()) {
-                    new com.sally.poc.dex.FlowObfuscator.DexTarget(dexItemFactory, clazz, method).addFlow();
+                    new DexFlowObfuscatorTarget(dexItemFactory, clazz, method).addFlow();
                 }
             }
         }
