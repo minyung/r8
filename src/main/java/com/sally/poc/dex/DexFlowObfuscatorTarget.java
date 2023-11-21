@@ -27,7 +27,7 @@ import com.android.tools.r8.ir.code.IfType;
 import com.sally.poc.FlowObfuscatorTarget;
 
 public class DexFlowObfuscatorTarget extends FlowObfuscatorTarget {
-    private int useRegisterSize = 2;
+    private final int useRegisterSize = 2;
 
     public DexFlowObfuscatorTarget(DexItemFactory dexItemFactory, DexProgramClass clazz, DexEncodedMethod method) {
         super(dexItemFactory, clazz, method);
@@ -53,8 +53,7 @@ public class DexFlowObfuscatorTarget extends FlowObfuscatorTarget {
         DexInstruction[] resultInstructions = insertInstructions(
                 originInstructions,
                 newInstructions,
-                index,
-                getInstructionsSize(newInstructions)
+                index
         );
 
         updateOffset(resultInstructions);
@@ -73,10 +72,10 @@ public class DexFlowObfuscatorTarget extends FlowObfuscatorTarget {
         method.setCode(resultDexCode.asCode(), method.getParameterInfo());
     }
 
-    private int getInstructionsSize(DexInstruction[] instructions) {
+    private int getInstructionsSize(DexInstruction[] instructions, int start, int end) {
         int size = 0;
-        for (DexInstruction instruction : instructions) {
-            size += instruction.getSize();
+        for (int i = start; i < end; i++) {
+            size += instructions[i].getSize();
         }
         return size;
     }
@@ -106,15 +105,18 @@ public class DexFlowObfuscatorTarget extends FlowObfuscatorTarget {
         }
     }
 
-    private DexInstruction[] insertInstructions(DexInstruction[] origin, DexInstruction[] target, int index, int newInstructionsSize) {
+    private DexInstruction[] insertInstructions(DexInstruction[] origin, DexInstruction[] target, int index) {
         DexInstruction[] resultInstructions = new DexInstruction[origin.length + target.length];
         for (int i = 0; i < index; i++) {
             // TODO: goto offset 를 사용하는 instructions 을 전부 구현해야함.
             if (origin[i] instanceof DexIfEqz) {
-                origin[i] = new DexIfEqz(
-                        ((DexIfEqz) origin[i]).AA,
-                        ((DexIfEqz) origin[i]).BBBB + newInstructionsSize
-                );
+                int jumpOffset = getInstructionsSize(origin, 0, i) + ((DexIfEqz) origin[i]).BBBB;
+                if (getInstructionsSize(origin, 0, index) < jumpOffset) {
+                    origin[i] = new DexIfEqz(
+                            ((DexIfEqz) origin[i]).AA,
+                            ((DexIfEqz) origin[i]).BBBB + getInstructionsSize(target, 0, target.length)
+                    );
+                }
             }
         }
         System.arraycopy(origin, 0, resultInstructions, 0, index);
@@ -202,11 +204,11 @@ public class DexFlowObfuscatorTarget extends FlowObfuscatorTarget {
             if ((random % 2) == 0) {
                 fieldRead = getOddNumberDexField();
                 fieldWrite = getEvenNumberDexField();
-                ifType = IfType.NE;
+                ifType = IfType.EQ;
             } else {
                 fieldRead = getEvenNumberDexField();
                 fieldWrite = getOddNumberDexField();
-                ifType = IfType.EQ;
+                ifType = IfType.NE;
             }
         }
 
