@@ -81,14 +81,20 @@ public class DexFlowObfuscatorTarget extends FlowObfuscatorTarget {
     }
 
     private int getRandom(DexInstruction[] instructions) {
+        // TODO: void 함수 호출인 경우에는 상관 없지 않을까? 확인 필요
+
         int number = ((int) (Math.random() * instructions.length));
 
+        // 이전 함수 실행 결과값을 어떤 register 에 저장할 지 정하는 것이기 때문에
+        // 해당 offset 에 로직을 추가하게 되면 함수 리턴 값 저장이 제대로 안됩니다.
         if (instructions[number] instanceof DexMoveResultObject ||
                 instructions[number] instanceof DexMoveResult ||
                 instructions[number] instanceof DexMoveResultWide) {
             return getRandom(instructions);
         }
 
+        // 함수 실행 결과값은 다음 instructions 에서 처리되기 때문에
+        // 함수 실행 후 로직을 추가하게 되면 함수 리턴 값 저장이 제대로 안됩니다.
         if ((0 < number) &&
                 (instructions[number - 1] instanceof DexInvokeDirect ||
                         instructions[number - 1] instanceof DexInvokeStatic)) {
@@ -137,6 +143,11 @@ public class DexFlowObfuscatorTarget extends FlowObfuscatorTarget {
                         getRegisterIndex(((DexConst4) instructions[i]).A, originParamIndex),
                         getRegisterIndex(((DexConst4) instructions[i]).B, originParamIndex)
                 );
+            } else if (instructions[i] instanceof DexConstString) {
+                instructions[i] = new DexConstString(
+                        getRegisterIndex(((DexConstString) instructions[i]).AA, originParamIndex),
+                        ((DexConstString) instructions[i]).BBBB
+                );
             } else if (instructions[i] instanceof DexInvokeStatic) {
                 instructions[i] = new DexInvokeStatic(
                         ((DexInvokeStatic) instructions[i]).A,
@@ -165,6 +176,10 @@ public class DexFlowObfuscatorTarget extends FlowObfuscatorTarget {
             } else if (instructions[i] instanceof DexMoveResultObject) {
                 instructions[i] = new DexMoveResultObject(
                         getRegisterIndex(((DexMoveResultObject) instructions[i]).AA, originParamIndex)
+                );
+            } else if (instructions[i] instanceof DexMoveResult) {
+                instructions[i] = new DexMoveResult(
+                        getRegisterIndex(((DexMoveResult) instructions[i]).AA, originParamIndex)
                 );
             } else if (instructions[i] instanceof DexReturnObject) {
                 instructions[i] = new DexReturnObject(
